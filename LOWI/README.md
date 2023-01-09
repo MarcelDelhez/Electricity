@@ -143,6 +143,7 @@ A table will be created into the database with the consumption of the house by 1
 | 2023-01-04 16:00:00 | 131.711 | 137.096 | 10.976 | 3.381 |   0.164 |       0 |
 | 2023-01-04 16:15:00 | 131.886 | 137.096 | 10.976 | 3.381 |   0.175 |       0 |
 | 2023-01-04 16:30:00 | 132.036 | 137.096 | 10.976 | 3.381 |    0.15 |       0 |
+
 This shows, into the 15 minutes after DtTm, the figures of the smart meter (the 4 indexes) and how much, during the 15 minutes had been taken from the network and how much had been injected on the network.
 ## Electricity price.
 A second table is created and populated.  It is about the price of the electricity into the context of a dynamic contract at Engie.
