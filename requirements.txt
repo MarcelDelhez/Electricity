@@ -1,0 +1,5 @@
+##### Requirements for Electricity management
+
+mariadb
+pandas
+paho-mqtt
