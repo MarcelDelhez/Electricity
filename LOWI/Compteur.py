@@ -21,7 +21,7 @@ from datetime import date, datetime, timezone, timedelta
  
 MQTT_BROKER = "192.168.1.223"
 MQTT_PORT = 1883
-MQTT_TOPIC = [("4c75252e8c51/PUB/CH0",0)]
+MQTT_TOPIC = "4c75252e8c51"
  
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
@@ -54,7 +54,7 @@ def on_message(client, userdata, message):
     if DtTm != O_DtTm:
         # Nouveau quart d'heure.
         msg_dict = json.loads(str(message.payload.decode("utf-8")))
-        if message.topic == "4c75252e8c51/PUB/CH0" :
+        if message.topic == (MQTT_TOPIC + "/PUB/CH0") :
             # Parsing du message MQTT
             Power_In = float(msg_dict['PI'])
             Power_Out = float(msg_dict['PE'])
@@ -97,7 +97,7 @@ def majPxElectr():
         end_date = date.today() + timedelta(days=1)
  
     for single_date in daterange(start_date, end_date):
-        url=fhttps://griddata.elia.be/eliabecontrols.prod/interface/Interconnections/daily/auctionresults/{single_date.strftime('%Y-%m-%d')}
+        url=f"https://griddata.elia.be/eliabecontrols.prod/interface/Interconnections/daily/auctionresults/{single_date.strftime('%Y-%m-%d')}"
  
         rsp = requests.get(url)
         print (f"     Retrieving {single_date}.")
@@ -128,7 +128,7 @@ def majPxElectr():
 # -- Se connecter au serveur MQTT
 Connected = False
 client = mqtt.Client("Conso")
-client.username_pw_set("pi", "aaa")
+client.username_pw_set("pi", "your_password")
 client.on_connect = on_connect
 client.on_message=on_message
 client.connect(MQTT_BROKER, MQTT_PORT)
@@ -136,7 +136,7 @@ client.connect(MQTT_BROKER, MQTT_PORT)
 # -----
 # -- Se connecter à la database
 try:
-    conn = mariadb.connect(user="pi", password="aaa", host="localhost", port=3306, database="P1")
+    conn = mariadb.connect(user="pi", password="your_password", host="localhost", port=3306, database="P1")
 except mariadb.Error as e:
     print(f"Error connecting to MariaDB : {e}")
     sys.exit(1)
@@ -145,7 +145,7 @@ cur = conn.cursor()
 # -- Créer la table si elle n'existe pas déjà
 cur.execute("CREATE TABLE IF NOT EXISTS Conso (DtTm DATETIME PRIMARY KEY, In_D FLOAT, In_N FLOAT, OUT_D FLOAT, OUT_N FLOAT, Soutire FLOAT, Injecte FLOAT)")
 conn.commit()
-cur.execute("CREATE TABLE IF NOT EXISTS PxElectr (DtTm DATETIME PRIMARY KEY, price FLOAT, Buy FLOAT, Sell FLOAT)")>
+cur.execute("CREATE TABLE IF NOT EXISTS PxElectr (DtTm DATETIME PRIMARY KEY, price FLOAT, Buy FLOAT, Sell FLOAT)")
 conn.commit()
  
 # -----
@@ -172,7 +172,7 @@ client.loop_start()
 while  Connected != True:
     time.sleep(1)
  
-client.subscribe(MQTT_TOPIC)
+client.subscribe([(MQTT_TOPIC + "/PUB/CH0",0)])
 try:
     while True:
         time.sleep(1)
