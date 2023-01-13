@@ -40,6 +40,15 @@ def write_conso():
     if O_Cptr_In_D != 0:
         sql_isrt = f"INSERT INTO Conso (DtTm, In_D, In_N, Out_D, Out_N, Soutire, Injecte) VALUES (?, ?, ?, ?, ?, ?, ?);"
         cur.execute(sql_isrt, (O_DtTm, Cptr_In_D, Cptr_In_N, Cptr_Out_D, Cptr_Out_N, Soutire, Injecte))
+        _mois = O_DtTm.date()-timedelta(days=O_DtTm.day-1)
+        cur.execute("SELECT kW FROM Pics WHERE Mois = ?;", (_mois,))
+        res = cur.fetchone()
+        if res:
+            kW = res[0]
+            if kW < 4*Soutire:
+                cur.execute ("UPDATE Pics set kW = ? WHERE Mois = ?;", (4*Soutire, _mois))
+        else:
+            cur.execute("INSERT INTO Pics (Mois, DtTm, kW) VALUES (?, ?, ?);", (_mois, o_DtTm, 4*Soutire))
         conn.commit()
  
 def on_message(client, userdata, message):
@@ -83,8 +92,8 @@ def majPxElectr():
     cur.execute("SELECT MAX(DtTm) FROM PxElectr;")
     Dt=cur.fetchall()[0][0]
     if  Dt is None :
-        print("No date found.  Consider 1/1/2020.")
-        Dt = date.fromisoformat('2019-12-31')
+        print("No date found.  Consider 1/1/2022.")
+        Dt = date.fromisoformat('2021-12-31')
     else :
         Dt = Dt.date()
         print(Dt)
@@ -95,35 +104,39 @@ def majPxElectr():
         end_date = date.today() + timedelta(days=2)
     else :
         end_date = date.today() + timedelta(days=1)
- 
+
     for single_date in daterange(start_date, end_date):
         url=f"https://griddata.elia.be/eliabecontrols.prod/interface/Interconnections/daily/auctionresults/{single_date.strftime('%Y-%m-%d')}"
- 
         rsp = requests.get(url)
         print (f"     Retrieving {single_date}.")
-        if rsp.status_code == 400:
-            print ("          - 400 : Retry -")
-            time.sleep(2)
-            rsp = requests.get(url)
         if rsp.status_code == 200:
+            cur.execute("SELECT BuyFormula, SellFormula FROM FormPxElectr WHERE FromDt = (SELECT MAX(FromDt) FROM FormPxElectr WHERE FromDt <= ?());", (single_date, ))
+            res = fetchone()
+            if res:
+                _BuyFormula = res[0]
+                _SellFormula = res[1]
+            else:
+                cur.execute("INSERT IGNORE INTO FormPxElectr (FromDt, BuyFormula, SellFormula) VALUES('2020-01-01', 'price / 10 + 0.204', 'price / 10');"
+                _BuyFormula = 'price / 10 + 0.204'
+                _SellFormula = 'price / 10'
+                conn.commit()
             df = pd.DataFrame.from_dict(rsp.json())
             df = df.loc[df['isVisible'] == True]
             df['dateTime'] = pd.to_datetime(df['dateTime'], format="%Y-%m-%dT%H:%M:%S")
-            df['Buy'] = (df['price']/10+.204)*1.06
-            df['Sell']=df['price']/10
+            df['Buy'] = eval(_BuyFormula.replace("price", "df['price']"))
+            df['Sell']= eval(_SellFormula.replace("price", "df['price']"))
             df.rename(columns = {'dateTime':'DtTm'}, inplace = True)
             sql_isrt = "INSERT INTO PxElectr (DtTm, price, Buy, Sell) VALUES (?, ?, ?, ?);"
             for index, r in df.iterrows():
                 cur.execute(sql_isrt, (r['DtTm'].strftime('%Y-%m-%d %H:%M:%S'), r['price'], r['Buy'], r['Sell']))
             conn.commit()
             rc = True 
-        else :
-            print(f"Aborting ! API response code is {rsp.status_code}.")
+        else:
             rc = False
             break
  
 # ----- ----- -----
- 
+
 # -----
 # -- Se connecter au serveur MQTT
 Connected = False
@@ -132,7 +145,7 @@ client.username_pw_set("pi", "your_password")
 client.on_connect = on_connect
 client.on_message=on_message
 client.connect(MQTT_BROKER, MQTT_PORT)
- 
+
 # -----
 # -- Se connecter à la database
 try:
@@ -142,12 +155,14 @@ except mariadb.Error as e:
     sys.exit(1)
 # -- Ouvrir un curseur
 cur = conn.cursor()
-# -- Créer la table si elle n'existe pas déjà
+# -- Créer les tables si elles n'existent pas déjà
 cur.execute("CREATE TABLE IF NOT EXISTS Conso (DtTm DATETIME PRIMARY KEY, In_D FLOAT, In_N FLOAT, OUT_D FLOAT, OUT_N FLOAT, Soutire FLOAT, Injecte FLOAT)")
-conn.commit()
 cur.execute("CREATE TABLE IF NOT EXISTS PxElectr (DtTm DATETIME PRIMARY KEY, price FLOAT, Buy FLOAT, Sell FLOAT)")
+cur.execute("CREATE TABLE IF NOT EXISTS Pics (Mois DATE PRIMARY KEY, DtTm DATETIME, kW FLOAT)")
+cur.execute("CREATE TABLE IF NOT EXISTS FormPxElectr (FromDt DATE PRIMARY KEY, BuyFormula char(50), SellFormula char(50))")
+cur.execute("INSERT IGNORE INTO FormPxElectr (FromDt, BuyFormula, SellFormula) VALUES('2020-01-01', 'price / 10 + 0.204', 'price / 10');"
 conn.commit()
- 
+
 # -----
 # -- Init variables
 DtTm = datetime.now(timezone.utc)
@@ -181,6 +196,7 @@ except KeyboardInterrupt:
     DtTm = datetime.now(timezone.utc)
     DtTm = DtTm - timedelta(microseconds=DtTm.microsecond)
     write_conso()
+    cur.close()
     conn.close()
     client.disconnect()
     client.loop_stop()
