@@ -97,6 +97,9 @@ No need to create the tables.  The software will do it by itself.
 The program will read the MQTT topic CH0 and store the information into a MariaDB database.  For that, some additional python modules must be installed.  So, refer to the requirements file into the root folder.
 
     pip install -r requirements.txt
+If, when running Compteur.py, you get the message telling numpy is not of the correct version (message like : libf77blas.so.3: cannot open shared object file: No such file or directory) :
+
+    sudo apt-get install libatlas-base-dev
 
 # Create a service reading the MQTT topics.
 
