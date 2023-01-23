@@ -1,0 +1,5 @@
+# List of trajects.
+
+> Planned charging trajectories can help optimize the charging of an electric vehicle (EV) by allowing the EV to charge at the most cost-effective and convenient times. This can be done by taking into account factors such as the cost of electricity at different times of day, the availability of charging stations, and the EV's driving schedule. By planning the charging trajectory in advance, the EV can be charged during times when electricity is cheapest, such as during off-peak hours, and at locations that are most convenient, such as at home or at a workplace. Additionally, planned charging trajectories can help to ensure that the EV has enough charge to complete its next trip, while also avoiding overcharging, which can damage the battery.
+
+My interface for logging my drives is Google Calendar.  This first block of code will read my calendar and, using Google Maps, estimate the departure time and the number of kilometers to drive so that I know till when the car can be charging and how many electricity must be present into the battery at that moment.
