@@ -262,7 +262,6 @@ class PandasFS(FusionSolar):
                 self.BatterieId=device['id']
             elif device['devTypeId'] == 47:
                 self.MeterId=device['id']
-
     
     # --- Internal functions.
     def _flatten_data(self, j):
@@ -279,16 +278,15 @@ class PandasFS(FusionSolar):
         return df
 
     # --- Methods.
-    def get_kpi_day(self, station_code: str,
-                    date: pd.Timestamp) -> pd.DataFrame:
-        data = super(PandasFS, self).get_station_kpi_day(station_code=station_code, date=date)
+    def get_kpi_day(self, date: pd.Timestamp) -> pd.DataFrame:
+        data = super(PandasFS, self).get_station_kpi_day(station_code=self.station_code, date=date)
         if len(data['data']) == 0:
             return pd.DataFrame()
 
         return self._build_df(data)
 
     # --- Retrieve a 3 days summary of major data per 5 minutes interval.
-    def get_5min_data(self, station_code: str, dateFrom: date) -> pd.DataFrame:       
+    def get_5min_data(self, dateFrom: date) -> pd.DataFrame:       
         resp = super(PandasFS, self).get_dev_kpi_fivemin(dev_id=self.OnduleurId, dev_type_id=1, date=dateFrom)
         if len(resp['data']) == 0:
             return pd.DataFrame()
