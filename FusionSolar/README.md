@@ -22,4 +22,4 @@ Retrieve data:
     except:
         print("It seems that the maximum number of calls per day has been exceeded.")
 Result:
-  ![Output DataFrame](./ElectrStatus.png)  
+  ![Output DataFrame](https://github.com/MarcelDelhez/Electricity/blob/main/FusionSolar/ElectrStatus.PNG)  
